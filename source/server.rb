@@ -372,8 +372,8 @@ end
 
 # TCPコネクション上で処理を行う．
 def main(opts)
-  warn sprintf("listening %s %s", opts["ipaddr"], opts["port"])
-  tcp_server = TCPServer.open(opts["ipaddr"], opts["port"])
+  warn sprintf("listening %s %s", opts[:ipaddr], opts[:port])
+  tcp_server = TCPServer.open(opts[:ipaddr], opts[:port])
   sockets = []
   2.times do |i|
     sockets.push(tcp_server.accept)
@@ -388,7 +388,12 @@ def main(opts)
   # バトル回数を保持する変数．
   i = 0
   # 行動プレイヤーを保持する変数．
-  c = 0
+  if opts[:random]
+    c = rand(2)
+  else
+    c = 0
+  end
+  puts "first: player" + (c+1).to_s
   Reporter.report_field(server.initial_condition(c), c) unless $VERBOSE.nil?
   begin
     sockets[c].puts("your turn")
@@ -415,12 +420,43 @@ def main(opts)
 end
 
 if __FILE__ == $0
-  opts = ARGV.getopts("", "ipaddr:127.0.0.1", "port:2000", "quiet")
-  if opts["quiet"]
+  options = {
+    ipaddr: '127.0.0.1',
+    port: '2000'
+  }
+  values = []
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = "Usage: server.rb [options]"
+    opts.on("-i", "--ipaddr", "IPアドレスを指定(デフォルト: #{options[:ipaddr]})") do |ipaddr|
+      options[:ipaddr] = ipaddr
+    end
+  
+    opts.on("-p", "--port", "ポート番号を指定(デフォルト: #{options[:port]})") do |port|
+      options[:port] = port
+    end
+
+    opts.on("-q", "--quiet", "盤面を表示しない") do |quiet|
+      options[:quiet] = quiet
+    end
+
+    opts.on("-r", "--random", "先攻をランダムに決める") do |random|
+      options[:random] = random
+    end
+
+    opts.on("-h", "--help", "ヘルプを表示") do
+      puts opts
+      exit
+    end
+  end
+
+  opt_parser.parse!(ARGV)
+  values = ARGV
+
+  if options[:quiet]
     $VERBOSE = nil
   end
-  if ARGV[0]                    # backward compatibility
-    opts["port"] = ARGV[0]
+  if values[0]                    # backward compatibility
+    options[:port] = values[0]
   end
-  main(opts)
+  main(options)
 end
