@@ -1,16 +1,71 @@
 # 変更点
-server.rbにrandomオプションを追加し、先攻をランダムに決められるようにしました。以下のように起動するとランダムになります。
+loopserver.rbを追加しました。基本的には公式のサーバと同じですが、回数をnオプションで指定して連戦できます。
 ```
-$ ruby source/server.rb -r
+$ ruby source/loopserver.rb -n 5
 ```
-オプションをつけずに起動すると先に接続したプレイヤー(player1)が先攻になります。
+nオプションをつけなければ1回対戦します。
 
-因みに、ポート番号はデフォルトで2000なのでコマンドライン引数で指定する必要はありません。
+rオプションをつけると先攻を毎回ランダムに決めます。
+```
+$ ruby source/loopserver.rb -r -n 10
+```
+rオプションをつけなければ、前半は先に接続したプレイヤー(player1)が先攻となり、後半は後から接続したプレイヤー(player2)が先攻となります。
+
+ポート番号はデフォルトで2000なのでコマンドライン引数で指定する必要はありません(公式と同じ仕様です)。
 
 既存のオプションについても、ショートオプションと説明を追加しました。詳細は以下のコマンドで確認できます。
 ```
-$ ruby source/server.rb -h
+$ ruby source/loopserver.rb -h
 ```
+Pythonのプレイヤーがこのサーバを利用するには、main関数を以下の通りに書き換えてください(プレイヤーのクラス名は適宜変更してください)。
+```
+def main(host, port, seed=0):
+    assert isinstance(host, str) and isinstance(port, int)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((host, port))
+        completed = False
+        with sock.makefile(mode="rw", buffering=1) as sockfile:
+            while True:
+                get_msg = sockfile.readline()
+                print(get_msg)
+                player = RandomPlayer()
+                sockfile.write(player.initial_condition() + "\n")
+
+                while True:
+                    info = sockfile.readline().rstrip()
+                    print(info)
+                    if info == "your turn":
+                        sockfile.write(player.action() + "\n")
+                        get_msg = sockfile.readline()
+                        player.update(get_msg)
+                    elif info == "waiting":
+                        get_msg = sockfile.readline()
+                        player.update(get_msg)
+                    elif info == "you win":
+                        break
+                    elif info == "you lose":
+                        break
+                    elif info == "even":
+                        break
+                    elif info == "you win.":
+                        completed = True
+                        break
+                    elif info == "you lose.":
+                        completed = True
+                        break
+                    elif info == "even.":
+                        completed = True
+                        break
+                    else:
+                        raise RuntimeError("unknown information")
+                if completed:
+                    for _ in range(5):
+                        info = sockfile.readline()
+                        print(info, end="")
+                    break
+```
+manual_player.rbに対応するコードは準備中ですm(_ _)m
 
 # submarine_game
 人やAIが対戦できる潜水艦ゲーム。 
