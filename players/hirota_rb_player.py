@@ -18,28 +18,33 @@ class HirotaRB(Player):
         self.field = [
             [i, j] for i in range(Player.FIELD_SIZE) for j in range(Player.FIELD_SIZE)
         ]
-        # 初期配置を非復元抽出でランダムに決める．
         positions = random.choice(make_not_near_coordinates())
         super().__init__(positions)
 
-    #
-    # 移動か攻撃かランダムに決める．
-    # どれがどこへ移動するか，あるいはどこに攻撃するかもランダム．
-    #
-    def action(self):
-        act = random.choice(["move", "attack"])
+    def action(self, probability):
+        # act = random.choice(["move", "attack"])
+        act = "attack"
 
         if act == "move":
             ship = random.choice(list(self.ships.values()))
             to = random.choice(self.field)
             while not ship.can_reach(to) or not self.overlap(to) is None:
                 to = random.choice(self.field)
-
             return json.dumps(self.move(ship.type, to))
+
         elif act == "attack":
-            to = random.choice(self.field)
-            while not self.can_attack(to):
-                to = random.choice(self.field)
+            candidate = []  # 攻撃対象の候補
+            max_prob = 0  # 射程内における敵艦がいる確率の最大値
+            for x in range(Player.FIELD_SIZE):
+                for y in range(Player.FIELD_SIZE):
+                    if not self.can_attack([x, y]):
+                        continue
+                    if probability[x][y] > max_prob:
+                        candidate = []
+                        max_prob = probability[x][y]
+                    if probability[x][y] == max_prob:
+                        candidate.append([x, y])
+            to = random.choice(candidate)
 
             return json.dumps(self.attack(to))
 
@@ -63,7 +68,7 @@ def main(host, port):
                     info = sockfile.readline().rstrip()
                     print(info)
                     if info == "your turn":
-                        sockfile.write(player.action() + "\n")
+                        sockfile.write(player.action(enemy.probability()) + "\n")
                         get_msg = sockfile.readline()
                         player.update(get_msg)
                         enemy.player_update(get_msg)

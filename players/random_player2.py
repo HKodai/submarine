@@ -12,7 +12,7 @@ from lib.player_base import Player, PlayerShip
 class RandomPlayer(Player):
 
     def __init__(self, seed=0):
-        random.seed(seed)
+        # random.seed(seed)
 
         # フィールドを2x2の配列として持っている．
         self.field = [
