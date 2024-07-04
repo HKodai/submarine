@@ -8,8 +8,6 @@ sys.path.append(os.getcwd())
 
 from lib.player_base import Player
 from hirotalib.enemy import Enemy
-from lib.make_coordinates import make_not_near_coordinates
-
 
 class HirotaRB(Player):
 
@@ -18,7 +16,8 @@ class HirotaRB(Player):
         self.field = [
             [i, j] for i in range(Player.FIELD_SIZE) for j in range(Player.FIELD_SIZE)
         ]
-        positions = random.choice(make_not_near_coordinates())
+        ps = random.sample(self.field, 3)
+        positions = {"w": ps[0], "c": ps[1], "s": ps[2]}
         super().__init__(positions)
 
     def action(self, probability):

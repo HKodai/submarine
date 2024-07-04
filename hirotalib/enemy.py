@@ -1,10 +1,5 @@
 import json
-import os
-import sys
-
-
-sys.path.append(os.getcwd())
-from lib.make_coordinates import make_all_coordinates, near
+import itertools
 
 
 # 敵の情報を表すクラス
@@ -13,7 +8,10 @@ class Enemy:
 
     # ありうる初期状態を全て列挙する。
     def __init__(self):
-        self.charts = make_all_coordinates()
+        self.charts = []
+        coordinates = [(x, y) for x in range(Enemy.FIELD_SIZE) for y in range(Enemy.FIELD_SIZE)]
+        for w, c, s in itertools.permutations(coordinates, 3):
+            self.charts.append({"w": w, "c": c, "s": s})
         self.hps = {"w": 3, "c": 2, "s": 1}
 
     # プレイヤーの攻撃を反映する。
@@ -32,7 +30,7 @@ class Enemy:
             # 近傍にいる敵艦について
             for ship in near_list:
                 # 近傍にいなければ矛盾
-                if not near(chart[ship], position):
+                if abs(chart[ship][0]-position[0]) > 1 or abs(chart[ship][1]-position[1]) > 1:
                     ok = False
                     break
             if ok:
@@ -45,7 +43,7 @@ class Enemy:
         for chart in self.charts:
             for pos in chart.values():
                 # 撃たれた位置の近傍にいずれかの敵艦がいればよい
-                if near(pos, position):
+                if abs(pos[0]-position[0]) <= 1 and abs(pos[1]-position[1]) <= 1:
                     new_charts.append(chart)
                     break
         self.charts = new_charts
