@@ -49,54 +49,39 @@ class HirotaRB(Player):
 
 
 # 仕様に従ってサーバとソケット通信を行う．
-def main(host, port):
+def main(host, port, seed=0):
     assert isinstance(host, str) and isinstance(port, int)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((host, port))
-        completed = False
         with sock.makefile(mode="rw", buffering=1) as sockfile:
-            while True:
-                get_msg = sockfile.readline()
-                print(get_msg)
-                player = HirotaRB()
-                enemy = Enemy()
-                sockfile.write(player.initial_condition() + "\n")
+            get_msg = sockfile.readline()
+            print(get_msg)
+            player = HirotaRB()
+            enemy = Enemy()
+            sockfile.write(player.initial_condition() + "\n")
 
-                while True:
-                    info = sockfile.readline().rstrip()
-                    print(info)
-                    if info == "your turn":
-                        sockfile.write(player.action(enemy.probability()) + "\n")
-                        get_msg = sockfile.readline()
-                        player.update(get_msg)
-                        enemy.player_update(get_msg)
-                    elif info == "waiting":
-                        get_msg = sockfile.readline()
-                        player.update(get_msg)
-                        enemy.enemy_update(get_msg)
-                    elif info == "you win":
-                        break
-                    elif info == "you lose":
-                        break
-                    elif info == "even":
-                        break
-                    elif info == "you win.":
-                        completed = True
-                        break
-                    elif info == "you lose.":
-                        completed = True
-                        break
-                    elif info == "even.":
-                        completed = True
-                        break
-                    else:
-                        raise RuntimeError("unknown information")
-                if completed:
-                    for _ in range(5):
-                        info = sockfile.readline()
-                        print(info, end="")
+            while True:
+                info = sockfile.readline().rstrip()
+                print(info)
+                if info == "your turn":
+                    probability = enemy.probability()
+                    sockfile.write(player.action(probability) + "\n")
+                    get_msg = sockfile.readline()
+                    player.update(get_msg)
+                    enemy.player_update(get_msg)
+                elif info == "waiting":
+                    get_msg = sockfile.readline()
+                    player.update(get_msg)
+                    enemy.enemy_update(get_msg)
+                elif info == "you win":
                     break
+                elif info == "you lose":
+                    break
+                elif info == "even":
+                    break
+                else:
+                    raise RuntimeError("unknown information")
 
 
 if __name__ == "__main__":

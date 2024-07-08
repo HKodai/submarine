@@ -1,5 +1,6 @@
 import json
 import itertools
+import matplotlib.pyplot as plt
 
 
 # 敵の情報を表すクラス
@@ -21,12 +22,19 @@ class Enemy:
             ok = True
             # 命中した場合
             if hit != None:
-                # 命中した位置に敵艦がいなければ矛盾
+                # 命中した位置に該当する敵艦がいなければ矛盾
                 if chart[hit] != tuple(position):
                     ok = False
                 # 撃沈した場合は海図から削除する。
                 elif self.hps[hit] == 1:
                     del chart[hit]
+            # 命中しなかった場合
+            else:
+                # 撃った位置に敵艦がいれば矛盾
+                for pos in chart.values():
+                    if pos == tuple(position):
+                        ok = False
+                        break
             # 近傍にいる敵艦について
             for ship in near_list:
                 # 近傍にいなければ矛盾
@@ -100,9 +108,26 @@ class Enemy:
     # 各マスに敵艦がいる確率
     def probability(self):
         prob = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
+        ship_probs = {ship: [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)] for ship in ["w", "c", "s"]}
         for chart in self.charts:
-            for pos in chart.values():
+            for ship, pos in chart.items():
                 prob[pos[0]][pos[1]] += 1
+                ship_probs[ship][pos[0]][pos[1]] += 1 
+        M = len(self.charts)
+        plt.subplots_adjust(wspace=0.1,hspace=0.3)
+        plt.subplot(2,2,1)
+        plt.imshow([list(x) for x in zip(*ship_probs["w"])], cmap="Reds", vmin=0, vmax=M)
+        plt.title("warship")
+        plt.subplot(2,2,2)
+        plt.imshow([list(x) for x in zip(*ship_probs["c"])], cmap="Reds", vmin=0, vmax=M)
+        plt.title("cruiser")
+        plt.subplot(2,2,3)
+        plt.imshow([list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=M)
+        plt.title("submarine")
+        plt.subplot(2,2,4)
+        plt.imshow([list(x) for x in zip(*prob)], cmap="Reds", vmin=0, vmax=M)
+        plt.title("any")
+        plt.show()
         return prob
 
 
