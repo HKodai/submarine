@@ -3,8 +3,10 @@ import itertools
 import matplotlib.pyplot as plt
 import sys
 import os
+
 sys.path.append(os.getcwd())
 from hirotalib.util import near
+
 
 # 敵の情報を表すクラス
 class Enemy:
@@ -13,7 +15,9 @@ class Enemy:
     # ありうる初期状態を全て列挙する。
     def __init__(self):
         self.charts = []
-        coordinates = [(x, y) for x in range(Enemy.FIELD_SIZE) for y in range(Enemy.FIELD_SIZE)]
+        coordinates = [
+            (x, y) for x in range(Enemy.FIELD_SIZE) for y in range(Enemy.FIELD_SIZE)
+        ]
         for w, c, s in itertools.permutations(coordinates, 3):
             self.charts.append({"w": w, "c": c, "s": s})
         self.hps = {"w": 3, "c": 2, "s": 1}
@@ -53,7 +57,7 @@ class Enemy:
         for chart in self.charts:
             for pos in chart.values():
                 # 撃たれた位置の近傍にいずれかの敵艦がいればよい
-                if abs(pos[0]-position[0]) <= 1 and abs(pos[1]-position[1]) <= 1:
+                if abs(pos[0] - position[0]) <= 1 and abs(pos[1] - position[1]) <= 1:
                     new_charts.append(chart)
                     break
         self.charts = new_charts
@@ -109,35 +113,53 @@ class Enemy:
 
     # 各マスについて、敵艦がいる確率とスコア(確率/hp)を計算(検討の余地あり)
     def enemy_info(self):
-        ship_probs = {ship: [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)] for ship in ["w", "c", "s"]}
+        ship_probs = {
+            ship: [
+                [0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)
+            ]
+            for ship in ["w", "c", "s"]
+        }
         score = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
-        enemy_range = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
+        enemy_range = [
+            [0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)
+        ]
         for chart in self.charts:
             for ship, pos in chart.items():
                 ship_probs[ship][pos[0]][pos[1]] += 1
-                score[pos[0]][pos[1]] += 1/self.hps[ship]
+                score[pos[0]][pos[1]] += 1 / self.hps[ship]
             for x in range(Enemy.FIELD_SIZE):
                 for y in range(Enemy.FIELD_SIZE):
                     for pos in chart.values():
-                        if abs(x-pos[0]) <= 1 and abs(y-pos[1]) <= 1:
+                        if abs(x - pos[0]) <= 1 and abs(y - pos[1]) <= 1:
                             enemy_range[x][y] += 1
                             break
-        M = len(self.charts)
-        plt.subplots_adjust(wspace=0.1,hspace=0.3)
-        plt.subplot(2,3,1)
-        plt.imshow([list(x) for x in zip(*ship_probs["w"])], cmap="Reds", vmin=0, vmax=M)
+        for x in range(Enemy.FIELD_SIZE):
+            for y in range(Enemy.FIELD_SIZE):
+                for ship in ["w", "c", "s"]:
+                    ship_probs[ship][x][y] /= len(self.charts)
+                score[x][y] /= len(self.charts)
+                enemy_range[x][y] /= len(self.charts)
+        plt.subplots_adjust(wspace=0.2, hspace=0.3)
+        plt.subplot(2, 3, 1)
+        plt.imshow(
+            [list(x) for x in zip(*ship_probs["w"])], cmap="Reds", vmin=0, vmax=1
+        )
         plt.title("warship")
-        plt.subplot(2,3,2)
-        plt.imshow([list(x) for x in zip(*ship_probs["c"])], cmap="Reds", vmin=0, vmax=M)
+        plt.subplot(2, 3, 2)
+        plt.imshow(
+            [list(x) for x in zip(*ship_probs["c"])], cmap="Reds", vmin=0, vmax=1
+        )
         plt.title("cruiser")
-        plt.subplot(2,3,3)
-        plt.imshow([list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=M)
+        plt.subplot(2, 3, 3)
+        plt.imshow(
+            [list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=1
+        )
         plt.title("submarine")
-        plt.subplot(2,3,4)
-        plt.imshow([list(x) for x in zip(*score)], cmap="Reds", vmin=0, vmax=M)
+        plt.subplot(2, 3, 4)
+        plt.imshow([list(x) for x in zip(*score)], cmap="Reds", vmin=0, vmax=1)
         plt.title("score")
-        plt.subplot(2,3,5)
-        plt.imshow([list(x) for x in zip(*enemy_range)], cmap="Reds", vmin=0, vmax=M)
+        plt.subplot(2, 3, 5)
+        plt.imshow([list(x) for x in zip(*enemy_range)], cmap="Reds", vmin=0, vmax=1)
         plt.title("enemy_range")
         plt.show()
         return score, enemy_range
