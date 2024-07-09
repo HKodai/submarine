@@ -1,3 +1,6 @@
+# hirota_playerについて
+hirota_player.pyが公式のサーバで使えるプログラムで、hirota_playerL.pyがloopserverに対応したプログラムです。自作のクラスや関数はhirotalibというディレクトリに入っています。
+
 # 変更点
 loopserver.rbを追加しました。基本的には公式のサーバと同じですが、回数をnオプションで指定して連戦できます。
 ```

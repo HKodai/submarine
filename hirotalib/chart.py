@@ -147,7 +147,7 @@ class Chart:
         my_condition = json.loads(json_)["condition"]["me"]
         self.hp_update("me", my_condition)
 
-    def info(self):
+    def info(self, visualize=0):
         # ある艦がそれぞれのマスにいる確率
         ship_probs = {
             p: {
@@ -188,8 +188,6 @@ class Chart:
                     if player == "enemy":
                         score[x][y] /= n
                         enemy_range[x][y] /= n
-        plt.figure(figsize=(9, 9))
-        plt.subplots_adjust(wspace=0.2, hspace=0.3)
 
         def plot_hm(data, color):
             sns.heatmap(
@@ -201,30 +199,33 @@ class Chart:
                 vmax=1,
             )
 
-        r, c = 3, 3
-        plt.subplot(r, c, 1)
-        plot_hm(ship_probs["enemy"]["w"], "Reds")
-        plt.title("warship")
-        plt.subplot(r, c, 2)
-        plot_hm(ship_probs["enemy"]["c"], "Reds")
-        plt.title("cruiser")
-        plt.subplot(r, c, 3)
-        plot_hm(ship_probs["enemy"]["s"], "Reds")
-        plt.title("submarine")
-        plt.subplot(r, c, 4)
-        plot_hm(score, "Reds")
-        plt.title("score")
-        plt.subplot(r, c, 5)
-        plot_hm(enemy_range, "Reds")
-        plt.title("enemy range")
-        plt.subplot(r, c, 7)
-        plot_hm(ship_probs["me"]["w"], "Blues")
-        plt.title("warship")
-        plt.subplot(r, c, 8)
-        plot_hm(ship_probs["me"]["c"], "Blues")
-        plt.title("cruiser")
-        plt.subplot(r, c, 9)
-        plot_hm(ship_probs["me"]["s"], "Blues")
-        plt.title("submarine")
-        plt.show()
+        if visualize:
+            plt.figure(figsize=(9, 9))
+            plt.subplots_adjust(wspace=0.2, hspace=0.3)
+            r, c = 3, 3
+            plt.subplot(r, c, 1)
+            plot_hm(ship_probs["enemy"]["w"], "Reds")
+            plt.title("warship")
+            plt.subplot(r, c, 2)
+            plot_hm(ship_probs["enemy"]["c"], "Reds")
+            plt.title("cruiser")
+            plt.subplot(r, c, 3)
+            plot_hm(ship_probs["enemy"]["s"], "Reds")
+            plt.title("submarine")
+            plt.subplot(r, c, 4)
+            plot_hm(score, "Reds")
+            plt.title("score")
+            plt.subplot(r, c, 5)
+            plot_hm(enemy_range, "Reds")
+            plt.title("enemy range")
+            plt.subplot(r, c, 7)
+            plot_hm(ship_probs["me"]["w"], "Blues")
+            plt.title("warship")
+            plt.subplot(r, c, 8)
+            plot_hm(ship_probs["me"]["c"], "Blues")
+            plt.title("cruiser")
+            plt.subplot(r, c, 9)
+            plot_hm(ship_probs["me"]["s"], "Blues")
+            plt.title("submarine")
+            plt.show()
         return ship_probs, score, enemy_range
