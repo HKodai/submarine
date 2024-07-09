@@ -33,6 +33,11 @@ class Enemy:
                     del chart[hit]
             # 命中しなかった場合
             else:
+                # 撃った位置に敵艦がいれば矛盾
+                for pos in chart.values():
+                    if pos == tuple(position):
+                        ok = False
+                        break
                 # near_listとの整合性を確認する。
                 for ship in chart.keys():
                     if (ship in near_list) != near(chart[ship], position):
