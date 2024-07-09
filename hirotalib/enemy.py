@@ -106,29 +106,39 @@ class Enemy:
                 self.enemy_move(ship, distance)
 
     # 各マスについて、敵艦がいる確率とスコア(確率/hp)を計算(検討の余地あり)
-    def calc_score(self):
-        score = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
+    def enemy_info(self):
         ship_probs = {ship: [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)] for ship in ["w", "c", "s"]}
+        score = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
+        enemy_range = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
         for chart in self.charts:
             for ship, pos in chart.items():
+                ship_probs[ship][pos[0]][pos[1]] += 1
                 score[pos[0]][pos[1]] += 1/self.hps[ship]
-                ship_probs[ship][pos[0]][pos[1]] += 1 
+            for x in range(Enemy.FIELD_SIZE):
+                for y in range(Enemy.FIELD_SIZE):
+                    for pos in chart.values():
+                        if abs(x-pos[0]) <= 1 and abs(y-pos[1]) <= 1:
+                            enemy_range[x][y] += 1
+                            break
         M = len(self.charts)
         plt.subplots_adjust(wspace=0.1,hspace=0.3)
-        plt.subplot(2,2,1)
+        plt.subplot(2,3,1)
         plt.imshow([list(x) for x in zip(*ship_probs["w"])], cmap="Reds", vmin=0, vmax=M)
         plt.title("warship")
-        plt.subplot(2,2,2)
+        plt.subplot(2,3,2)
         plt.imshow([list(x) for x in zip(*ship_probs["c"])], cmap="Reds", vmin=0, vmax=M)
         plt.title("cruiser")
-        plt.subplot(2,2,3)
+        plt.subplot(2,3,3)
         plt.imshow([list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=M)
         plt.title("submarine")
-        plt.subplot(2,2,4)
+        plt.subplot(2,3,4)
         plt.imshow([list(x) for x in zip(*score)], cmap="Reds", vmin=0, vmax=M)
         plt.title("score")
+        plt.subplot(2,3,5)
+        plt.imshow([list(x) for x in zip(*enemy_range)], cmap="Reds", vmin=0, vmax=M)
+        plt.title("enemy_range")
         plt.show()
-        return score
+        return score, enemy_range
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ class HirotaRB(Player):
         positions = {"w": ps[0], "c": ps[1], "s": ps[2]}
         super().__init__(positions)
 
-    def action(self, probability):
+    def action(self, score, enemy_range):
         # act = random.choice(["move", "attack"])
         act = "attack"
 
@@ -39,10 +39,10 @@ class HirotaRB(Player):
                 for y in range(Player.FIELD_SIZE):
                     if not self.can_attack([x, y]):
                         continue
-                    if probability[x][y] > max_score:
+                    if score[x][y] > max_score:
                         candidate = []
-                        max_score = probability[x][y]
-                    if probability[x][y] == max_score:
+                        max_score = score[x][y]
+                    if score[x][y] == max_score:
                         candidate.append([x, y])
             to = random.choice(candidate)
 
@@ -66,8 +66,8 @@ def main(host, port):
                 info = sockfile.readline().rstrip()
                 print(info)
                 if info == "your turn":
-                    score= enemy.calc_score()
-                    sockfile.write(player.action(score) + "\n")
+                    score, enemy_range = enemy.enemy_info()
+                    sockfile.write(player.action(score, enemy_range) + "\n")
                     get_msg = sockfile.readline()
                     player.update(get_msg)
                     enemy.player_update(get_msg)
