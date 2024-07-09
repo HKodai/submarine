@@ -22,32 +22,56 @@ class HirotaRB(Player):
         positions = {"w": ps[0], "c": ps[1], "s": ps[2]}
         super().__init__(positions)
 
-    def action(self, score, enemy_range):
-        act = random.choice(["move", "attack"])
-        # act = "attack"
-
-        if act == "move":
-            ship = random.choice(list(self.ships.values()))
-            to = random.choice(self.field)
-            while not ship.can_reach(to) or not self.overlap(to) is None:
-                to = random.choice(self.field)
-            return json.dumps(self.move(ship.type, to))
-
-        elif act == "attack":
-            candidate = []  # 攻撃対象の候補
-            max_score = 0  # 射程内における敵艦がいる確率の最大値
-            for x in range(Player.FIELD_SIZE):
-                for y in range(Player.FIELD_SIZE):
-                    if not self.can_attack([x, y]):
+    def action(self, prob, score, enemy_range, hps):
+        candidate = []  # 攻撃するマスの候補
+        max_score = 0  # 射程内におけるスコアの最大値
+        for x in range(Player.FIELD_SIZE):
+            for y in range(Player.FIELD_SIZE):
+                if not self.can_attack([x, y]):
+                    continue
+                if score[x][y] > max_score:
+                    candidate = []
+                    max_score = score[x][y]
+                if score[x][y] == max_score:
+                    candidate.append([x, y])
+        # 射程内のスコアが全て0の場合
+        if max_score == 0:
+            # 自艦隊のhpが敵艦隊以下の場合
+            if sum(hps["me"].values()) <= sum(hps["enemy"].values()):
+                # 味方の艦がいる確率が最も高いマスに射撃(不用意に情報を与えないため)
+                max_prob = 0
+                for x in range(Player.FIELD_SIZE):
+                    for y in range(Player.FIELD_SIZE):
+                        if not self.can_attack([x, y]):
+                            continue
+                        prob_sum = sum(
+                            [prob["me"][ship][x][y] for ship in self.ships.keys()]
+                        )
+                        if prob_sum >= max_prob:
+                            to = [x, y]
+                            max_prob = prob_sum
+                return json.dumps(self.attack(to))
+            # 自艦隊のhpが敵艦隊より多い場合
+            else:
+                # 敵の射程に入ろうとする
+                max_prob = 0
+                for ship in self.ships.values():
+                    if ship.hp == 0:
                         continue
-                    if score[x][y] > max_score:
-                        candidate = []
-                        max_score = score[x][y]
-                    if score[x][y] == max_score:
-                        candidate.append([x, y])
-            to = random.choice(candidate)
-
-            return json.dumps(self.attack(to))
+                    for x in range(Player.FIELD_SIZE):
+                        for y in range(Player.FIELD_SIZE):
+                            if (
+                                not ship.can_reach([x, y])
+                                or self.overlap([x, y]) is not None
+                            ):
+                                continue
+                            if enemy_range[x][y] >= max_prob:
+                                ship_type = ship.type
+                                to = [x, y]
+                                max_prob = enemy_range[x][y]
+                print(ship_type, to)
+                return json.dumps(self.move(ship_type, to))
+        return json.dumps(self.attack(random.choice(candidate)))
 
 
 # 仕様に従ってサーバとソケット通信を行う．
@@ -69,8 +93,10 @@ def main(host, port):
                 info = sockfile.readline().rstrip()
                 print(info)
                 if info == "your turn":
-                    score, enemy_range = chart.info()
-                    sockfile.write(player.action(score, enemy_range) + "\n")
+                    prob, score, enemy_range = chart.info()
+                    sockfile.write(
+                        player.action(prob, score, enemy_range, chart.hps) + "\n"
+                    )
                     get_msg = sockfile.readline()
                     player.update(get_msg)
                     chart.player_update(get_msg)

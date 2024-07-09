@@ -227,4 +227,4 @@ class Chart:
         plot_hm(ship_probs["me"]["s"], "Blues")
         plt.title("submarine")
         plt.show()
-        return score, enemy_range
+        return ship_probs, score, enemy_range
