@@ -105,13 +105,13 @@ class Enemy:
                 distance = result["moved"]["distance"]
                 self.enemy_move(ship, distance)
 
-    # 各マスに敵艦がいる確率
-    def probability(self):
-        prob = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
+    # 各マスについて、敵艦がいる確率とスコア(確率/hp)を計算(検討の余地あり)
+    def calc_score(self):
+        score = [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)]
         ship_probs = {ship: [[0 for _ in range(Enemy.FIELD_SIZE)] for _ in range(Enemy.FIELD_SIZE)] for ship in ["w", "c", "s"]}
         for chart in self.charts:
             for ship, pos in chart.items():
-                prob[pos[0]][pos[1]] += 1
+                score[pos[0]][pos[1]] += 1/self.hps[ship]
                 ship_probs[ship][pos[0]][pos[1]] += 1 
         M = len(self.charts)
         plt.subplots_adjust(wspace=0.1,hspace=0.3)
@@ -125,10 +125,10 @@ class Enemy:
         plt.imshow([list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=M)
         plt.title("submarine")
         plt.subplot(2,2,4)
-        plt.imshow([list(x) for x in zip(*prob)], cmap="Reds", vmin=0, vmax=M)
-        plt.title("any")
+        plt.imshow([list(x) for x in zip(*score)], cmap="Reds", vmin=0, vmax=M)
+        plt.title("score")
         plt.show()
-        return prob
+        return score
 
 
 if __name__ == "__main__":

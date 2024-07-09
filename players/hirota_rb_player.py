@@ -34,15 +34,15 @@ class HirotaRB(Player):
 
         elif act == "attack":
             candidate = []  # 攻撃対象の候補
-            max_prob = 0  # 射程内における敵艦がいる確率の最大値
+            max_score = 0  # 射程内における敵艦がいる確率の最大値
             for x in range(Player.FIELD_SIZE):
                 for y in range(Player.FIELD_SIZE):
                     if not self.can_attack([x, y]):
                         continue
-                    if probability[x][y] > max_prob:
+                    if probability[x][y] > max_score:
                         candidate = []
-                        max_prob = probability[x][y]
-                    if probability[x][y] == max_prob:
+                        max_score = probability[x][y]
+                    if probability[x][y] == max_score:
                         candidate.append([x, y])
             to = random.choice(candidate)
 
@@ -50,7 +50,7 @@ class HirotaRB(Player):
 
 
 # 仕様に従ってサーバとソケット通信を行う．
-def main(host, port, seed=0):
+def main(host, port):
     assert isinstance(host, str) and isinstance(port, int)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -66,8 +66,8 @@ def main(host, port, seed=0):
                 info = sockfile.readline().rstrip()
                 print(info)
                 if info == "your turn":
-                    probability = enemy.probability()
-                    sockfile.write(player.action(probability) + "\n")
+                    score= enemy.calc_score()
+                    sockfile.write(player.action(score) + "\n")
                     get_msg = sockfile.readline()
                     player.update(get_msg)
                     enemy.player_update(get_msg)
