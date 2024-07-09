@@ -7,8 +7,9 @@ import sys
 sys.path.append(os.getcwd())
 
 from lib.player_base import Player
-from hirotalib.enemy import Enemy
+from hirotalib.chart import Chart
 from hirotalib.util import make_initial
+
 
 class HirotaRB(Player):
 
@@ -59,22 +60,22 @@ def main(host, port):
             get_msg = sockfile.readline()
             print(get_msg)
             player = HirotaRB()
-            enemy = Enemy()
+            chart = Chart()
             sockfile.write(player.initial_condition() + "\n")
 
             while True:
                 info = sockfile.readline().rstrip()
                 print(info)
                 if info == "your turn":
-                    score, enemy_range = enemy.enemy_info()
+                    score, enemy_range = chart.info()
                     sockfile.write(player.action(score, enemy_range) + "\n")
                     get_msg = sockfile.readline()
                     player.update(get_msg)
-                    enemy.player_update(get_msg)
+                    chart.player_update(get_msg)
                 elif info == "waiting":
                     get_msg = sockfile.readline()
                     player.update(get_msg)
-                    enemy.enemy_update(get_msg)
+                    chart.enemy_update(get_msg)
                 elif info == "you win":
                     break
                 elif info == "you lose":
