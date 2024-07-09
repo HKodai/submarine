@@ -1,5 +1,6 @@
 import json
 import itertools
+import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 import os
@@ -150,27 +151,57 @@ class Chart:
                     ship_probs[ship][x][y] /= n
                 score[x][y] /= n
                 enemy_range[x][y] /= n
+        plt.figure(figsize=(9, 6))
         plt.subplots_adjust(wspace=0.2, hspace=0.3)
         plt.subplot(2, 3, 1)
-        plt.imshow(
-            [list(x) for x in zip(*ship_probs["w"])], cmap="Reds", vmin=0, vmax=1
+        sns.heatmap(
+            [list(x) for x in zip(*ship_probs["w"])],
+            annot=True,
+            cbar=False,
+            cmap="Reds",
+            vmin=0,
+            vmax=1,
         )
         plt.title("warship")
         plt.subplot(2, 3, 2)
-        plt.imshow(
-            [list(x) for x in zip(*ship_probs["c"])], cmap="Reds", vmin=0, vmax=1
+        sns.heatmap(
+            [list(x) for x in zip(*ship_probs["c"])],
+            annot=True,
+            cbar=False,
+            cmap="Reds",
+            vmin=0,
+            vmax=1,
         )
         plt.title("cruiser")
         plt.subplot(2, 3, 3)
-        plt.imshow(
-            [list(x) for x in zip(*ship_probs["s"])], cmap="Reds", vmin=0, vmax=1
+        sns.heatmap(
+            [list(x) for x in zip(*ship_probs["s"])],
+            annot=True,
+            cbar=False,
+            cmap="Reds",
+            vmin=0,
+            vmax=1,
         )
         plt.title("submarine")
         plt.subplot(2, 3, 4)
-        plt.imshow([list(x) for x in zip(*score)], cmap="Reds", vmin=0, vmax=1)
+        sns.heatmap(
+            [list(x) for x in zip(*score)],
+            annot=True,
+            cbar=False,
+            cmap="Reds",
+            vmin=0,
+            vmax=1,
+        )
         plt.title("score")
         plt.subplot(2, 3, 5)
-        plt.imshow([list(x) for x in zip(*enemy_range)], cmap="Reds", vmin=0, vmax=1)
+        sns.heatmap(
+            [list(x) for x in zip(*enemy_range)],
+            annot=True,
+            cbar=False,
+            cmap="Reds",
+            vmin=0,
+            vmax=1,
+        )
         plt.title("enemy_range")
         plt.show()
         return score, enemy_range
