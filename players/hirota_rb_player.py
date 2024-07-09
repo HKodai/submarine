@@ -23,8 +23,8 @@ class HirotaRB(Player):
         super().__init__(positions)
 
     def action(self, score, enemy_range):
-        # act = random.choice(["move", "attack"])
-        act = "attack"
+        act = random.choice(["move", "attack"])
+        # act = "attack"
 
         if act == "move":
             ship = random.choice(list(self.ships.values()))
@@ -60,7 +60,9 @@ def main(host, port):
             get_msg = sockfile.readline()
             print(get_msg)
             player = HirotaRB()
-            chart = Chart()
+            chart = Chart(
+                {ship: player.ships[ship].position for ship in ["w", "c", "s"]}
+            )
             sockfile.write(player.initial_condition() + "\n")
 
             while True:
