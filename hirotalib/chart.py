@@ -15,7 +15,7 @@ class Chart:
     SHIPS = ["w", "c", "s"]
     PLAYERS = ["me", "enemy"]
 
-    # ありうる初期状態を全て列挙する。
+    # ありうる初期状態を全て列挙する。分布は一様であると仮定する。
     def __init__(self, position):
         self.charts = {p: [] for p in Chart.PLAYERS}
         coordinates = [
@@ -53,7 +53,7 @@ class Chart:
         for chart in self.charts[player]:
             for pos in chart.values():
                 # 撃った位置の近傍にいずれかの攻撃側艦がいればよい
-                if abs(pos[0] - position[0]) <= 1 and abs(pos[1] - position[1]) <= 1:
+                if near(pos, position):
                     new_charts.append(chart)
                     break
         self.charts[player] = new_charts
@@ -108,19 +108,18 @@ class Chart:
                 self.attacker_update("me", position)
                 # 敵の海図を更新
                 self.attacked_update("enemy", position, hit, near)
-            # 移動した場合
-            else:
-                my_condition = json.loads(json_)["condition"]["me"]
-                for ship, hp in self.hps["me"].items():
-                    if hp == 0:
-                        continue
-                    prev = self.my_position[ship]
-                    new = my_condition[ship]["position"]
-                    if prev != new:
-                        distance = [new[0] - prev[0], new[1] - prev[1]]
-                        self.mover_update("me", ship, distance)
-                        self.my_position[ship] = new
-                        break
+        # 移動した場合
+        my_condition = json.loads(json_)["condition"]["me"]
+        for ship, hp in self.hps["me"].items():
+            if hp == 0:
+                continue
+            prev = self.my_position[ship]
+            new = my_condition[ship]["position"]
+            if prev != new:
+                distance = [new[0] - prev[0], new[1] - prev[1]]
+                self.mover_update("me", ship, distance)
+                self.my_position[ship] = new
+                break
         # 敵のhpを更新
         enemy_condition = json.loads(json_)["condition"]["enemy"]
         self.hp_update("enemy", enemy_condition)
@@ -148,86 +147,84 @@ class Chart:
         my_condition = json.loads(json_)["condition"]["me"]
         self.hp_update("me", my_condition)
 
-    # 各マスについて、敵艦がいる確率、スコア(確率/hp)、敵の射程内である確率を計算
     def info(self):
+        # ある艦がそれぞれのマスにいる確率
         ship_probs = {
-            ship: [
-                [0 for _ in range(Chart.FIELD_SIZE)] for _ in range(Chart.FIELD_SIZE)
-            ]
-            for ship in Chart.SHIPS
+            p: {
+                ship: [
+                    [0 for _ in range(Chart.FIELD_SIZE)]
+                    for _ in range(Chart.FIELD_SIZE)
+                ]
+                for ship in Chart.SHIPS
+            }
+            for p in Chart.PLAYERS
         }
+        # それぞれのマスを撃ちたい度合い
         score = [[0 for _ in range(Chart.FIELD_SIZE)] for _ in range(Chart.FIELD_SIZE)]
+        # それぞれのマスが敵の射程内である確率
         enemy_range = [
             [0 for _ in range(Chart.FIELD_SIZE)] for _ in range(Chart.FIELD_SIZE)
         ]
-        for chart in self.charts["enemy"]:
-            for ship, pos in chart.items():
-                ship_probs[ship][pos[0]][pos[1]] += 1
-                score[pos[0]][pos[1]] += 1 / self.hps["enemy"][ship]
+        for player in Chart.PLAYERS:
+            for chart in self.charts[player]:
+                for ship, pos in chart.items():
+                    ship_probs[player][ship][pos[0]][pos[1]] += 1
+                    if player == "enemy":
+                        # 頭数を減らしたほうが有利だと思われるので、確率をhpで割る。
+                        score[pos[0]][pos[1]] += 1 / self.hps["enemy"][ship]
+                if player == "enemy":
+                    for x in range(Chart.FIELD_SIZE):
+                        for y in range(Chart.FIELD_SIZE):
+                            for pos in chart.values():
+                                if near([x, y], pos):
+                                    enemy_range[x][y] += 1
+                                    break
+        for player in Chart.PLAYERS:
+            n = len(self.charts[player])
             for x in range(Chart.FIELD_SIZE):
                 for y in range(Chart.FIELD_SIZE):
-                    for pos in chart.values():
-                        if abs(x - pos[0]) <= 1 and abs(y - pos[1]) <= 1:
-                            enemy_range[x][y] += 1
-                            break
-        n = len(self.charts["enemy"])
-        for x in range(Chart.FIELD_SIZE):
-            for y in range(Chart.FIELD_SIZE):
-                for ship in Chart.SHIPS:
-                    ship_probs[ship][x][y] /= n
-                score[x][y] /= n
-                enemy_range[x][y] /= n
-        plt.figure(figsize=(9, 6))
+                    for ship in Chart.SHIPS:
+                        ship_probs[player][ship][x][y] /= n
+                    if player == "enemy":
+                        score[x][y] /= n
+                        enemy_range[x][y] /= n
+        plt.figure(figsize=(9, 9))
         plt.subplots_adjust(wspace=0.2, hspace=0.3)
-        plt.subplot(2, 3, 1)
-        sns.heatmap(
-            [list(x) for x in zip(*ship_probs["w"])],
-            annot=True,
-            cbar=False,
-            cmap="Reds",
-            vmin=0,
-            vmax=1,
-        )
+
+        def plot_hm(data, color):
+            sns.heatmap(
+                [list(x) for x in zip(*data)],
+                annot=True,
+                cbar=False,
+                cmap=color,
+                vmin=0,
+                vmax=1,
+            )
+
+        r, c = 3, 3
+        plt.subplot(r, c, 1)
+        plot_hm(ship_probs["enemy"]["w"], "Reds")
         plt.title("warship")
-        plt.subplot(2, 3, 2)
-        sns.heatmap(
-            [list(x) for x in zip(*ship_probs["c"])],
-            annot=True,
-            cbar=False,
-            cmap="Reds",
-            vmin=0,
-            vmax=1,
-        )
+        plt.subplot(r, c, 2)
+        plot_hm(ship_probs["enemy"]["c"], "Reds")
         plt.title("cruiser")
-        plt.subplot(2, 3, 3)
-        sns.heatmap(
-            [list(x) for x in zip(*ship_probs["s"])],
-            annot=True,
-            cbar=False,
-            cmap="Reds",
-            vmin=0,
-            vmax=1,
-        )
+        plt.subplot(r, c, 3)
+        plot_hm(ship_probs["enemy"]["s"], "Reds")
         plt.title("submarine")
-        plt.subplot(2, 3, 4)
-        sns.heatmap(
-            [list(x) for x in zip(*score)],
-            annot=True,
-            cbar=False,
-            cmap="Reds",
-            vmin=0,
-            vmax=1,
-        )
+        plt.subplot(r, c, 4)
+        plot_hm(score, "Reds")
         plt.title("score")
-        plt.subplot(2, 3, 5)
-        sns.heatmap(
-            [list(x) for x in zip(*enemy_range)],
-            annot=True,
-            cbar=False,
-            cmap="Reds",
-            vmin=0,
-            vmax=1,
-        )
-        plt.title("enemy_range")
+        plt.subplot(r, c, 5)
+        plot_hm(enemy_range, "Reds")
+        plt.title("enemy range")
+        plt.subplot(r, c, 7)
+        plot_hm(ship_probs["me"]["w"], "Blues")
+        plt.title("warship")
+        plt.subplot(r, c, 8)
+        plot_hm(ship_probs["me"]["c"], "Blues")
+        plt.title("cruiser")
+        plt.subplot(r, c, 9)
+        plot_hm(ship_probs["me"]["s"], "Blues")
+        plt.title("submarine")
         plt.show()
         return score, enemy_range
