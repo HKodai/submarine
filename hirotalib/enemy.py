@@ -1,7 +1,10 @@
 import json
 import itertools
 import matplotlib.pyplot as plt
-
+import sys
+import os
+sys.path.append(os.getcwd())
+from hirotalib.util import near
 
 # 敵の情報を表すクラス
 class Enemy:
@@ -30,17 +33,21 @@ class Enemy:
                     del chart[hit]
             # 命中しなかった場合
             else:
-                # 撃った位置に敵艦がいれば矛盾
-                for pos in chart.values():
-                    if pos == tuple(position):
+                for ship in chart.keys():
+                    if (ship in near_list) != near(chart[ship], position):
                         ok = False
                         break
-            # 近傍にいる敵艦について
-            for ship in near_list:
-                # 近傍にいなければ矛盾
-                if abs(chart[ship][0]-position[0]) > 1 or abs(chart[ship][1]-position[1]) > 1:
-                    ok = False
-                    break
+            #     # 撃った位置に敵艦がいれば矛盾
+            #     for pos in chart.values():
+            #         if pos == tuple(position):
+            #             ok = False
+            #             break
+            # # 近傍にいる敵艦について
+            # for ship in near_list:
+            #     # 近傍にいなければ矛盾
+            #     if abs(chart[ship][0]-position[0]) > 1 or abs(chart[ship][1]-position[1]) > 1:
+            #         ok = False
+            #         break
             if ok:
                 new_charts.append(chart)
         self.charts = new_charts

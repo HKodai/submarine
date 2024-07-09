@@ -8,7 +8,7 @@ sys.path.append(os.getcwd())
 
 from lib.player_base import Player
 from hirotalib.enemy import Enemy
-from hirotalib.make_initial import make_initial
+from hirotalib.util import make_initial
 
 class HirotaRB(Player):
 
