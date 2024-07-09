@@ -17,7 +17,7 @@ class HirotaRB(Player):
         self.field = [
             [i, j] for i in range(Player.FIELD_SIZE) for j in range(Player.FIELD_SIZE)
         ]
-        ps = make_initial(Player.FIELD_SIZE)
+        ps = make_initial(self.field)
         positions = {"w": ps[0], "c": ps[1], "s": ps[2]}
         super().__init__(positions)
 

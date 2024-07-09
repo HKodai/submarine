@@ -1,24 +1,18 @@
 import random
 
-def make_initial(size):
-    # sは端に配置
-    while True:
-        sx = random.randrange(size)
-        sy = random.randrange(size)
-        if sx == 0 or sx == size-1 or sy == 0 or sy == size-1:
-            break
-    # 他の艦から2マス以内に入らないようにする
-    while True:
-        cx = random.randrange(size)
-        cy = random.randrange(size)
-        if abs(cx-sx) > 2 or abs(cy-sy) > 2:
-            break
-    while True:
-        wx = random.randrange(size)
-        wy = random.randrange(size)
-        if (abs(wx-sx) > 2 or abs(wy-sy) > 2) and (abs(wx-cx) > 2 or abs(wy-cy) > 2):
-            break
-    return [[wx, wy], [cx, cy], [sx, sy]]
+# 2座標がnマス以内にあるかどうかを返す。
+def near(pos1, pos2, n=1):
+    return abs(pos1[0]-pos2[0]) <= n and abs(pos1[1]-pos2[1]) <= n
 
-def near(pos1, pos2):
-    return abs(pos1[0]-pos2[0]) <= 1 and abs(pos1[1]-pos2[1]) <= 1
+# 初期配置を決める。
+def make_initial(field):
+    while True:
+        ps = random.sample(field, 3)
+        # sは端に配置
+        if ps[0][0] in [0, len(field)] or ps[0][1] in [0, len(field)]:
+            continue
+        # 艦同士が2マス以内に入らないようにする
+        if near(ps[0], ps[1], 2) or near(ps[1], ps[2], 2) or near(ps[2], ps[0], 2):
+            continue
+        break
+    return ps
