@@ -92,8 +92,16 @@ class HirotaPlayer(Player):
                 return json.dumps(self.attack(to))
             # 自艦隊のhpが敵艦隊より多い場合
             else:
-                # 敵の射程に入ろうとする
-                max_prob = 0
+                # スコアが高い位置を目指す
+                destination_candidate = []  # 目指す座標の候補
+                max_score = 0
+                for x in range(Player.FIELD_SIZE):
+                    for y in range(Player.FIELD_SIZE):
+                        if score[x][y] > max_score:
+                            max_score = score[x][y]
+                            destination_candidate.append([x, y])
+                destination = random.choice(destination_candidate)
+                min_dist = Player.FIELD_SIZE * 2
                 for ship in self.ships.values():
                     if ship.hp == 0:
                         continue
@@ -104,10 +112,12 @@ class HirotaPlayer(Player):
                                 or self.overlap([x, y]) is not None
                             ):
                                 continue
-                            if enemy_range[x][y] >= max_prob:
+                            # destinationとのマンハッタン距離が小さくなるような移動をする
+                            distance = abs(destination[0] - x) + abs(destination[1] - y)
+                            if distance < min_dist:
                                 ship_type = ship.type
                                 to = [x, y]
-                                max_prob = enemy_range[x][y]
+                                min_dist = distance
                 return json.dumps(self.move(ship_type, to))
 
         # 特に問題が無ければスコアの最も高いマス(複数あればランダムに選ぶ)を攻撃する。
