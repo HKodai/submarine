@@ -23,6 +23,44 @@ class HirotaPlayer(Player):
         super().__init__(positions)
 
     def action(self, prob, score, enemy_range, hps):
+        # 逃げるかどうか判断する。
+        ESCAPE_THRESHOLD = 0.0  # 逃げた先の被弾確率として許容できる上限
+        escape_candidate = []  # 逃げ方の候補
+        hp_advantage = sum(hps["me"].values()) - sum(
+            hps["enemy"].values()
+        )  # 合計hpの差
+        for ship in self.ships.values():
+            pos = ship.position
+            # 自分の位置がばれていて、敵の射程内なら検討する
+            if (
+                prob["me"][ship.type][pos[0]][pos[1]] == 1.0
+                and enemy_range[pos[0]][pos[1]] == 1.0
+            ):
+                min_range_prob = 1.0  # 最も安全なマスにおける、敵の射程内である確率
+                confirmed = False  # 自分の射程内に位置の確定している敵艦が存在する
+                to = [0, 0]
+                for x in range(Player.FIELD_SIZE):
+                    for y in range(Player.FIELD_SIZE):
+                        if (
+                            ship.can_reach([x, y])
+                            and self.overlap([x, y]) is None
+                            and enemy_range[x][y] < min_range_prob
+                        ):
+                            to = [x, y]
+                            min_range_prob = enemy_range[x][y]
+                        if self.can_attack([x, y]):
+                            for enemy_ship in ["w", "c", "s"]:
+                                if prob["enemy"][enemy_ship][x][y] == 1.0:
+                                    confirmed = True
+                if (not confirmed and hp_advantage < 1) or hp_advantage < 0:
+                    escape_candidate.append([min_range_prob, ship.hp, ship.type, to])
+        # 逃げた先の被弾確率が低い逃げ方を優先して採用、同じならhpの低い順に逃がす
+        if escape_candidate:
+            escape_candidate.sort()
+            prob, _, ship_type, to = escape_candidate[0]
+            if prob <= ESCAPE_THRESHOLD:
+                return json.dumps(self.move(ship_type, to))
+
         candidate = []  # 攻撃するマスの候補
         max_score = 0  # 射程内におけるスコアの最大値
         for x in range(Player.FIELD_SIZE):
@@ -34,10 +72,11 @@ class HirotaPlayer(Player):
                     max_score = score[x][y]
                 if score[x][y] == max_score:
                     candidate.append([x, y])
+
         # 射程内のスコアが全て0の場合
         if max_score == 0:
             # 自艦隊のhpが敵艦隊以下の場合
-            if sum(hps["me"].values()) <= sum(hps["enemy"].values()):
+            if hp_advantage <= 0:
                 # 味方の艦がいる確率が最も高いマスに射撃(不用意に情報を与えないため)
                 max_prob = 0
                 for x in range(Player.FIELD_SIZE):
@@ -70,6 +109,8 @@ class HirotaPlayer(Player):
                                 to = [x, y]
                                 max_prob = enemy_range[x][y]
                 return json.dumps(self.move(ship_type, to))
+
+        # 特に問題が無ければスコアの最も高いマス(複数あればランダムに選ぶ)を攻撃する。
         return json.dumps(self.attack(random.choice(candidate)))
 
 
